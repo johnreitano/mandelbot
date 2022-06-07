@@ -77,6 +77,17 @@ resource "null_resource" "build_and_configure_client" {
       host        = aws_eip.explorer[0].public_ip
     }
   }
+  provisioner "file" {
+    content     = var.validator_genesis_file_contents
+    destination = "/home/ubuntu/.bdjuno/genesis.json"
+    connection {
+      type        = "ssh"
+      user        = "ubuntu"
+      private_key = file(var.ssh_private_key_path)
+      host        = aws_eip.explorer[0].public_ip
+    }
+  }
+
   triggers = {
     recent_instance_creation = join(",", [for r in aws_instance.explorer : r.id])
     change_to_genesis_file   = var.validator_genesis_file_contents
@@ -90,8 +101,10 @@ resource "null_resource" "start_explorer" {
   provisioner "remote-exec" {
     inline = [
       "echo starting explorer node...",
-      "sudo systemctl enable mandelbot.service",
-      "sudo systemctl start mandelbot.service",
+      "sudo systemctl enable mandelbot",
+      "sudo systemctl start mandelbot",
+      "sudo systemctl enable bdjuno",
+      "sudo systemctl start bdjuno",
       "echo done starting explorer node"
     ]
     connection {

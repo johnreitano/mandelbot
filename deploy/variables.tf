@@ -75,5 +75,6 @@ variable "num_seed_instances" {
 
 variable "create_explorer" {
   description = "whether to include an explorere node"
+  type        = bool
   default     = true
 }

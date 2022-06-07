@@ -68,38 +68,56 @@ if [[ -z "$(which psql)" ]]; then
     sudo apt install -y postgresql-client
 fi
 
+sudo docker rm -f postgresql 2>/dev/null
+sudo docker run --name postgresql -e POSTGRES_USER=admin -e POSTGRES_PASSWORD=adminpassword -p 5432:5432 -v /pgdata:/var/lib/postgresql/data -d postgres
+until psql -h $PG_HOST -U $PG_USER -d $PG_DATABASE -c "select 1" >/dev/null 2>&1 || [ $RETRIES -eq 0 ]; do
+    echo "Waiting for postgres server, $((RETRIES--)) remaining attempts..."
+    sleep 1
+done
+
+sleep 5
+
 echo "***about to clone repo"
+cd ~
 git clone https://github.com/forbole/bdjuno.git
 cd bdjuno
 git checkout chains/cosmos/testnet
 make install
+export PATH=$(go env GOPATH)/bin:$PATH
 
-sudo docker run --name postgresql -e POSTGRES_USER=admin -e POSTGRES_PASSWORD=adminpassword -p 5432:5432 -v /pgdata:/var/lib/postgresql/data -d postgres
+RETRIES=15
+export PGPASSWORD=adminpassword
+until psql -h 127.0.0.1 -U admin -p 5432 -c "select 1" >/dev/null 2>&1 || [ $RETRIES -eq 0 ]; do
+    echo "Waiting for postgres server, $((RETRIES--)) remaining attempts..."
+    sleep 1
+done
 
-PGPASSWORD=adminpassword psql -h 127.0.0.1 -U admin -p 5432 <<-EOF
+psql -h 127.0.0.1 -U admin -p 5432 <<-EOF
 CREATE DATABASE bdjuno;
 CREATE USER bdjuno WITH ENCRYPTED PASSWORD 'bdjunopassword';
 GRANT ALL PRIVILEGES ON DATABASE bdjuno TO bdjuno;
 EOF
 
-for f in bdjuno/database/schema/*.sql; do
+for f in ./database/schema/*.sql; do
     PGPASSWORD=bdjunopassword psql -h 127.0.0.1 -U bdjuno -p 5432 -d bdjuno -f ${f}
 done
 
+# NOTE: genesis file already copied to ~/.bdjuno/genesis.json
 bdjuno init
-dasel put string -f ~/.bdjuno/config.toml -p toml ".chain.bech32_prefix" "mandelbot"
-dasel put string -f ~/.bdjuno/config.toml -p toml ".database.name" "bdjuno"
-dasel put string -f ~/.bdjuno/config.toml -p toml ".database.user" "bdjuno"
-dasel put string -f ~/.bdjuno/config.toml -p toml ".database.password" "bdjunopassword"
+dasel put string -f ~/.bdjuno/config.yaml -p yaml ".chain.bech32_prefix" "mandelbot"
+dasel put string -f ~/.bdjuno/config.yaml -p yaml ".database.name" "bdjuno"
+dasel put string -f ~/.bdjuno/config.yaml -p yaml ".database.user" "bdjuno"
+dasel put string -f ~/.bdjuno/config.yaml -p yaml ".database.password" "bdjunopassword"
 
-# TODO: copy the genesis file ahead of time to ~/.bdjuno/genesis.json
-
+sudo docker rm -f hasura 2>/dev/null
 sudo docker run --name hasura -e HASURA_GRAPHQL_UNAUTHORIZED_ROLE="anonymous" -e ACTION_BASE_URL="http://localhost:3000" -e HASURA_GRAPHQL_METADATA_DATABASE_URL="postgres://bdjuno:bdjunopassword@host.docker.internal:5432/bdjuno" -e PG_DATABASE_URL="postgres://bdjuno:bdjunopassword@host.docker.internal:5432/bdjuno" -e HASURA_GRAPHQL_ENABLE_CONSOLE="true" -e HASURA_GRAPHQL_DEV_MODE="true" -e HASURA_GRAPHQL_ENABLED_LOG_TYPES="startup, http-log, webhook-log, websocket-log, query-log" -e HASURA_GRAPHQL_ADMIN_SECRET="myadminsecretkey" -p 8080:8080 --add-host host.docker.internal:host-gateway -d hasura/graphql-engine
 
 curl -L https://github.com/hasura/graphql-engine/raw/stable/cli/get.sh | bash
 
+cd ~/bdjuno/hasura
 hasura metadata apply --endpoint http://localhost:8080 --admin-secret myadminsecretkey
 
+GOPATH=$(go env GOPATH)
 sudo tee /etc/systemd/system/bdjuno.service >/dev/null <<EOF
 [Unit]
 Description=BDJuno parser
@@ -107,15 +125,15 @@ After=network-online.target
 
 [Service]
 User=$USER
-ExecStart=${go env GOPATH}/bin/bdjuno start
+ExecStart=$GOPATH/bin/bdjuno start
 Restart=always
 RestartSec=3
 LimitNOFILE=4096
 
 [Install]
 WantedBy=multi-user.target
+
 EOF
+
 sudo chmod 664 /etc/systemd/system/bdjuno.service
 sudo systemctl daemon-reload
-sudo systemctl enable bdjuno
-sudo systemctl start bdjuno
