@@ -45,6 +45,17 @@ resource "null_resource" "build_and_configure_client" {
     EOF
   }
 
+  provisioner "file" {
+    content     = var.validator_genesis_file_contents
+    destination = "/tmp/genesis.json"
+    connection {
+      type        = "ssh"
+      user        = "ubuntu"
+      private_key = file(var.ssh_private_key_path)
+      host        = aws_eip.explorer[0].public_ip
+    }
+  }
+
   provisioner "remote-exec" {
     inline = [
       "echo building client on explorer node...",
@@ -70,16 +81,6 @@ resource "null_resource" "build_and_configure_client" {
   provisioner "file" {
     content     = var.validator_genesis_file_contents
     destination = "/home/ubuntu/.mandelbot/config/genesis.json"
-    connection {
-      type        = "ssh"
-      user        = "ubuntu"
-      private_key = file(var.ssh_private_key_path)
-      host        = aws_eip.explorer[0].public_ip
-    }
-  }
-  provisioner "file" {
-    content     = var.validator_genesis_file_contents
-    destination = "/home/ubuntu/.bdjuno/genesis.json"
     connection {
       type        = "ssh"
       user        = "ubuntu"

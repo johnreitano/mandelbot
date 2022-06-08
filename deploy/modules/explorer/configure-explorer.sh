@@ -25,8 +25,10 @@ for i in $(seq 0 $N_MINUS_1); do
     P2P_SEEDS="${P2P_SEEDS}${SEED_P2P_KEYS[$i]}@${SEED_IPS[$i]}:26656,"
 done
 
+cd ~/mandelbot
 rm -rf ~/.mandelbot
 build/mandelbotd init $MONIKER --chain-id mandelbot-test-1
+cp /tmp/genesis.json ~/.mandelbot/config/
 
 cat >/tmp/mandelbot.service <<-EOF
 [Unit]
@@ -73,6 +75,7 @@ dasel put string -f ~/.bdjuno/config.yaml -p yaml ".chain.bech32_prefix" "mandel
 dasel put string -f ~/.bdjuno/config.yaml -p yaml ".database.name" "bdjuno"
 dasel put string -f ~/.bdjuno/config.yaml -p yaml ".database.user" "bdjuno"
 dasel put string -f ~/.bdjuno/config.yaml -p yaml ".database.password" "bdjunopassword"
+cp /tmp/genesis.json ~/.bdjuno/
 
 sudo docker rm -f postgresql 2>/dev/null
 sudo rm -rf /pgdata

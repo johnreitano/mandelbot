@@ -27,6 +27,7 @@ for i in $(seq 0 $N_MINUS_1); do
     fi
 done
 
+cd ~/mandelbot
 rm -rf ~/.mandelbot
 build/mandelbotd init $MONIKER --chain-id mandelbot-test-1
 cp deploy/node_key_validator_${NODE_INDEX}.json ~/.mandelbot/config/node_key.json

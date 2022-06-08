@@ -29,6 +29,7 @@ for i in $(seq 0 $N_MINUS_1); do
     P2P_PERSISTENT_PEERS="${P2P_PERSISTENT_PEERS}${VALIDATOR_P2P_KEYS[$i]}@${VALIDATOR_IPS[$i]}:26656,"
 done
 
+cd ~/mandelbot
 rm -rf ~/.mandelbot
 build/mandelbotd init $MONIKER --chain-id mandelbot-test-1
 cp deploy/node_key_seed_${NODE_INDEX}.json ~/.mandelbot/config/node_key.json
