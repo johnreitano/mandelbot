@@ -1,15 +1,21 @@
-# Simple usage with a mounted data directory:
-# > docker build -t numi .
-# > docker run -it -p 46657:46657 -p 46656:46656 -v ~/.numi:/numi/.numi numi numid init
-# > docker run -it -p 46657:46657 -p 46656:46656 -v ~/.numi:/numi/.numi numi numid start
-FROM golang:1.18-alpine
-
-# Set working directory for the build
+FROM ubuntu:22.04 AS build-stage
 WORKDIR /mandelbot
+RUN apt-get update -y
+RUN DEBIAN_FRONTEND=noninteractive apt-get install --no-install-recommends -y ca-certificates git golang make
 
-# Install minimum necessary dependencies for building a Cosmos app
-RUN apk add --no-cache curl make git libc-dev bash gcc linux-headers eudev-dev python3
+COPY go.mod go.sum .
+RUN go mod download
 
-COPY .. .
+COPY . .
 
-RUN make -f deploy/Makefile install
+RUN VERSION=$(echo $(git describe --tags) | sed 's/^v//') && \
+    COMMIT=$(git log -1 --format='%H') && \
+    ldflags='-X github.com/cosmos/cosmos-sdk/version.Name=mandelbot \
+-X github.com/cosmos/cosmos-sdk/version.ServerName=mandelbotd \
+-X github.com/cosmos/cosmos-sdk/version.Version=$(VERSION) \
+-X github.com/cosmos/cosmos-sdk/version.Commit=$(COMMIT) \
+-X "github.com/cosmos/cosmos-sdk/version.BuildTags=netgo,"' && \
+    GOOS=linux GOARCH=amd64 CGO_ENABLED=1 go build -mod=readonly -tags netgo -ldflags "${ldflags}" -o /tmp ./cmd/mandelbotd
+
+FROM scratch AS export-stage
+COPY --from=build-stage /tmp/mandelbotd /mandelbotd

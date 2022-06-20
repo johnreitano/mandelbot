@@ -33,17 +33,17 @@ resource "null_resource" "build_and_configure_client" {
   depends_on = [aws_security_group.seed, aws_eip.seed, aws_instance.seed]
   count      = var.num_instances
 
-  provisioner "local-exec" {
-    command = <<-EOF
-      # copy source to remote node as soon as sshd is available
-      until scp -o StrictHostKeyChecking=no -o UserKnownHostsFile=/dev/null -i ~/.ssh/id_rsa ${var.compressed_source_path} ubuntu@${aws_eip.seed[count.index].public_ip}:/tmp/mandelbot.tar.gz
-      do
-        sleep 1
-        echo -n "."
-      done
-      echo
-    EOF
-  }
+  # provisioner "local-exec" {
+  #   command = <<-EOF
+  #     # copy source to remote node as soon as sshd is available
+  #     until scp -o StrictHostKeyChecking=no -o UserKnownHostsFile=/dev/null -i ~/.ssh/id_rsa ${var.compressed_source_path} ubuntu@${aws_eip.seed[count.index].public_ip}:/tmp/mandelbot.tar.gz
+  #     do
+  #       sleep 1
+  #       echo -n "."
+  #     done
+  #     echo
+  #   EOF
+  # }
 
   provisioner "remote-exec" {
     inline = [
@@ -80,6 +80,7 @@ resource "null_resource" "build_and_configure_client" {
   triggers = {
     recent_instance_creation = join(",", [for r in aws_instance.seed : r.id])
     change_to_genesis_file   = var.validator_genesis_file_contents
+    x                        = "2"
   }
 }
 

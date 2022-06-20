@@ -16,7 +16,7 @@ else
 fi
 
 # generate genesis transaction for this validator
-yes | build/mandelbotd keys delete ${MONIKER}-key --keyring-backend test 2>/dev/null || :
-echo $MNEMONIC | build/mandelbotd keys add ${MONIKER}-key --keyring-backend test --recover
-build/mandelbotd add-genesis-account $(build/mandelbotd keys show ${MONIKER}-key -a --keyring-backend test) 100000000000stake || :
-build/mandelbotd gentx ${MONIKER}-key 100000000stake --chain-id mandelbot-test-1 --moniker=${MONIKER} --keyring-backend test
+yes | upload/mandelbotd keys delete ${MONIKER}-key --keyring-backend test 2>/dev/null || :
+echo $MNEMONIC | upload/mandelbotd keys add ${MONIKER}-key --keyring-backend test --recover
+upload/mandelbotd add-genesis-account $(upload/mandelbotd keys show ${MONIKER}-key -a --keyring-backend test) 100000000000stake || :
+upload/mandelbotd gentx ${MONIKER}-key 100000000stake --chain-id mandelbot-test-1 --moniker=${MONIKER} --keyring-backend test

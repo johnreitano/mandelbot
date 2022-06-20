@@ -23,10 +23,7 @@ if [[ -z "$(which ignite)" ]]; then
 fi
 
 # pkill ignite || : # if failed, ignite wasn't running
-pkill mandelbotd || : # if failed, ignite wasn't running
+pkill mandelbotd || : # if failed, mandelbotd wasn't running
 sleep 1
-cd ~/mandelbot
-# ignite chain build --output build
-make build-mandelbot-linux
 
 ulimit -n 4096 # set maximum number of open files to 4096

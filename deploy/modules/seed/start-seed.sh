@@ -12,8 +12,7 @@ else
     MONIKER="gray"
 fi
 
-cd ~/mandelbot
 # nohup ignite chain serve --verbose >mandelbot.out 2>&1 </dev/null &
-# nohup build/mandelbotd start >mandelbot.out 2>&1 </dev/null &
-echo "About to start seed node ${MONIKER} with NODE_INDEX ${NODE_INDEX} and id $(build/mandelbotd tendermint show-node-id)"
-build/mandelbotd start
+# nohup upload/mandelbotd start >mandelbot.out 2>&1 </dev/null &
+echo "About to start seed node ${MONIKER} with NODE_INDEX ${NODE_INDEX} and id $(upload/mandelbotd tendermint show-node-id)"
+upload/mandelbotd start

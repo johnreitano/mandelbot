@@ -25,9 +25,8 @@ for i in $(seq 0 $N_MINUS_1); do
     P2P_SEEDS="${P2P_SEEDS}${SEED_P2P_KEYS[$i]}@${SEED_IPS[$i]}:26656,"
 done
 
-cd ~/mandelbot
 rm -rf ~/.mandelbot
-build/mandelbotd init $MONIKER --chain-id mandelbot-test-1
+upload/mandelbotd init $MONIKER --chain-id mandelbot-test-1
 cp /tmp/genesis.json ~/.mandelbot/config/
 
 cat >/tmp/mandelbot.service <<-EOF
@@ -38,7 +37,7 @@ After=syslog.target network-online.target
 
 [Service]
 Type=simple
-ExecStart=sudo -u ubuntu /home/ubuntu/mandelbot/deploy/modules/explorer/start-explorer.sh ${NODE_INDEX}
+ExecStart=sudo -u ubuntu /home/ubuntu/upload/start-explorer.sh ${NODE_INDEX}
 Restart=on-failure
 RestartSec=10
 KillMode=process
@@ -64,12 +63,14 @@ if [[ -z "$(which psql)" ]]; then
 fi
 
 cd ~
+rm -rf bdjuno
 git clone https://github.com/forbole/bdjuno.git
 cd bdjuno
 git checkout chains/cosmos/testnet
 make install
 GOPATH=$(go env GOPATH)
 export PATH=$GOPATH/bin:$PATH
+rm -rf ~/.bdjuno
 bdjuno init
 dasel put string -f ~/.bdjuno/config.yaml -p yaml ".chain.bech32_prefix" "mandelbot"
 dasel put string -f ~/.bdjuno/config.yaml -p yaml ".database.name" "bdjuno"

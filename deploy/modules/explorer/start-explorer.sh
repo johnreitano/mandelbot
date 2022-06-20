@@ -2,11 +2,10 @@
 set -x
 set -e
 
-cd ~/mandelbot
 # nohup ignite chain serve --verbose >mandelbot.out 2>&1 </dev/null &
-# nohup build/mandelbotd start >mandelbot.out 2>&1 </dev/null &
-echo "About to start explorer node with id $(build/mandelbotd tendermint show-node-id)"
-build/mandelbotd start </dev/null &
+# nohup upload/mandelbotd start >mandelbot.out 2>&1 </dev/null &
+echo "About to start explorer node with id $(upload/mandelbotd tendermint show-node-id)"
+upload/mandelbotd start </dev/null &
 sleep 10
 
 sudo docker start postgresql

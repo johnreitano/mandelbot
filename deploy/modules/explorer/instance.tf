@@ -33,17 +33,17 @@ resource "null_resource" "build_and_configure_client" {
   depends_on = [aws_security_group.explorer_be, aws_eip.explorer, aws_instance.explorer]
   count      = var.create_explorer ? 1 : 0
 
-  provisioner "local-exec" {
-    command = <<-EOF
-      # copy source to remote node as soon as sshd is available
-      until scp -o StrictHostKeyChecking=no -o UserKnownHostsFile=/dev/null -i ~/.ssh/id_rsa ${var.compressed_source_path} ubuntu@${aws_eip.explorer[0].public_ip}:/tmp/mandelbot.tar.gz
-      do
-        sleep 1
-        echo -n "."
-      done
-      echo
-    EOF
-  }
+  # provisioner "local-exec" {
+  #   command = <<-EOF
+  #     # copy source to remote node as soon as sshd is available
+  #     until scp -o StrictHostKeyChecking=no -o UserKnownHostsFile=/dev/null -i ~/.ssh/id_rsa ${var.compressed_source_path} ubuntu@${aws_eip.explorer[0].public_ip}:/tmp/mandelbot.tar.gz
+  #     do
+  #       sleep 1
+  #       echo -n "."
+  #     done
+  #     echo
+  #   EOF
+  # }
 
   provisioner "file" {
     content     = var.validator_genesis_file_contents

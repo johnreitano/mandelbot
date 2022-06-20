@@ -13,8 +13,7 @@ else
 fi
 echo MONIKER=$MONIKER
 
-cd ~/mandelbot
 # nohup ignite chain serve --verbose >mandelbot.out 2>&1 </dev/null &
-nohup build/mandelbotd start >mandelbot.out 2>&1 </dev/null &
+nohup upload/mandelbotd start >mandelbot.out 2>&1 </dev/null &
 sleep 2
-echo "Started validator node ${MONIKER} with NODE_INDEX ${NODE_INDEX} and id $(build/mandelbotd tendermint show-node-id)"
+echo "Started validator node ${MONIKER} with NODE_INDEX ${NODE_INDEX} and id $(upload/mandelbotd tendermint show-node-id)"

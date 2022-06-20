@@ -46,8 +46,3 @@ variable "validator_ips" {
 variable "validator_genesis_file_contents" {
   description = "the contents of the genesis file from the first validator node"
 }
-
-variable "compressed_source_path" {
-  description = "the path to compressed source (.tar.gz file)"
-}
-

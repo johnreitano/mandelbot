@@ -27,10 +27,9 @@ for i in $(seq 0 $N_MINUS_1); do
     fi
 done
 
-cd ~/mandelbot
 rm -rf ~/.mandelbot
-build/mandelbotd init $MONIKER --chain-id mandelbot-test-1
-cp deploy/node_key_validator_${NODE_INDEX}.json ~/.mandelbot/config/node_key.json
+upload/mandelbotd init $MONIKER --chain-id mandelbot-test-1
+cp upload/node_key_validator_${NODE_INDEX}.json ~/.mandelbot/config/node_key.json
 
 cat >/tmp/mandelbot.service <<-EOF
 [Unit]
@@ -40,7 +39,7 @@ After=syslog.target network-online.target
 
 [Service]
 Type=simple
-ExecStart=sudo -u ubuntu /home/ubuntu/mandelbot/deploy/modules/validator/start-validator.sh ${NODE_INDEX}
+ExecStart=sudo -u ubuntu /home/ubuntu/upload/start-validator.sh ${NODE_INDEX}
 Restart=on-failure
 RestartSec=10
 KillMode=process
