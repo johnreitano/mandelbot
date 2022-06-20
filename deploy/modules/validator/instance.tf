@@ -32,13 +32,12 @@ resource "aws_eip" "validator" {
 
 
 resource "null_resource" "configure_client" {
-  depends_on = [aws_security_group.validator, aws_eip.validator, var.build_linux_executable_id]
+  depends_on = [aws_security_group.validator, aws_eip.validator]
   count      = var.num_instances
 
   provisioner "remote-exec" {
     inline = [
-      "mkdir -p upload",
-      "rm -rf upload/*",
+      "rm -rf upload",
     ]
     connection {
       type        = "ssh"
@@ -49,8 +48,8 @@ resource "null_resource" "configure_client" {
   }
 
   provisioner "file" {
-    source      = "upload/"
-    destination = "upload"
+    source      = "upload"
+    destination = "."
     connection {
       type        = "ssh"
       user        = "ubuntu"
@@ -87,8 +86,8 @@ resource "null_resource" "configure_client" {
     }
   }
   triggers = {
-    recent_instance_creation = join(",", concat([for r in aws_instance.validator : r.id], [var.build_linux_executable_id]))
-    files_changed            = join(",", [for f in fileset("upload", "**") : filesha256("upload/${f}")])
+    instance_created       = join(",", [for r in aws_instance.validator : r.id])
+    uploaded_files_changed = join(",", [for f in setunion(fileset(".", "upload/**"), fileset(".", "modules/validator/upload/**")) : filesha256(f)])
   }
 }
 
@@ -186,11 +185,11 @@ resource "null_resource" "start_validator" {
   provisioner "remote-exec" {
     inline = [
       "echo starting validator node ${count.index} via systemctl...",
+      "sudo systemctl stop mandelbot.service",
+      "sudo systemctl start mandelbot.service",
+      "sleep 2",
+      "sudo systemctl status -l mandelbot.service --no-pager",
       "sudo systemctl enable mandelbot.service",
-      "sudo -u ubuntu /home/ubuntu/upload/start-validator.sh 0",
-      "sudo systemctl start -l mandelbot.service",
-      "sleep 3",
-      "sudo systemctl status mandelbot.service --no-pager",
     ]
     connection {
       type        = "ssh"

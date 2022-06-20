@@ -38,8 +38,3 @@ variable "num_instances" {
 variable "ami" {
   description = "the ami to use for instances"
 }
-
-variable "build_linux_executable_id" {
-  description = "id of parent null_resource build_linux_executable, used to create dependency"
-}
-

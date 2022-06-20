@@ -21,8 +21,7 @@ module "validator" {
   subnet_cidr          = var.validator_subnet_cidr
   ami                  = "ami-0ee8244746ec5d6d4" # Get deatils on this ami in https://us-west-2.console.aws.amazon.com/ec2/v2/home?region=us-west-2#AMICatalog:
   # ami         = data.aws_ami.latest-ubuntu.id
-  num_instances             = var.num_validator_instances
-  build_linux_executable_id = "${filesha256("upload/mandelbotd")}-${null_resource.build_linux_executable.id}"
+  num_instances = var.num_validator_instances
 }
 
 # module "seed" {
