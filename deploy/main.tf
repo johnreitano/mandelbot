@@ -4,7 +4,7 @@ resource "null_resource" "build_linux_executable" {
   }
 
   triggers = {
-    always_run = "${timestamp()}"
+    code_changed = join(",", [for f in setunion(fileset("..", "**/*.go"), fileset("..", "go.*"), fileset("..", "deploy/Dockerfile")) : filesha256("../${f}")])
   }
 }
 

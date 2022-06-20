@@ -18,5 +18,7 @@ if [[ "${NODE_INDEX}" != "0" ]]; then
 fi
 
 # nohup ignite chain serve --verbose >mandelbot.out 2>&1 </dev/null &
+pkill mandelbotd
+sleep 1
 echo "about to start validator node ${MONIKER} with NODE_INDEX ${NODE_INDEX} and id $(upload/mandelbotd tendermint show-node-id)"
 upload/mandelbotd start

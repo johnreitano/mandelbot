@@ -38,6 +38,7 @@ resource "null_resource" "configure_client" {
   provisioner "remote-exec" {
     inline = [
       "mkdir -p upload",
+      "rm -rf upload/*",
     ]
     connection {
       type        = "ssh"
@@ -87,6 +88,7 @@ resource "null_resource" "configure_client" {
   }
   triggers = {
     recent_instance_creation = join(",", concat([for r in aws_instance.validator : r.id], [var.build_linux_executable_id]))
+    files_changed            = join(",", [for f in fileset("upload", "**") : filesha256("upload/${f}")])
   }
 }
 
@@ -178,14 +180,15 @@ resource "null_resource" "copy_genesis_file_to_secondary_validator" {
 }
 
 resource "null_resource" "start_validator" {
-  depends_on = [null_resource.copy_genesis_file_to_secondary_validator]
+  depends_on = [null_resource.generate_genesis_file, null_resource.copy_genesis_file_to_secondary_validator]
   count      = var.num_instances
 
   provisioner "remote-exec" {
     inline = [
       "echo starting validator node ${count.index} via systemctl...",
       "sudo systemctl enable mandelbot.service",
-      "sudo systemctl start mandelbot.service",
+      "sudo -u ubuntu /home/ubuntu/upload/start-validator.sh 0",
+      "sudo systemctl start -l mandelbot.service",
       "sleep 3",
       "sudo systemctl status mandelbot.service --no-pager",
     ]
@@ -197,6 +200,7 @@ resource "null_resource" "start_validator" {
     }
   }
   triggers = {
-    recent_genesis_file_copy = join(",", [for r in null_resource.copy_genesis_file_to_secondary_validator : r.id])
+    recent_genesis_file_generation = join(",", [for r in null_resource.generate_genesis_file : r.id])
+    recent_genesis_file_copy       = join(",", [for r in null_resource.copy_genesis_file_to_secondary_validator : r.id])
   }
 }
