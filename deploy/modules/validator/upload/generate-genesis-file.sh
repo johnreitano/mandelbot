@@ -10,7 +10,7 @@ for f in ~/.mandelbot/config/gentx/gentx-*.json; do
         ADDRESS=$(cat ${f} | jq -r '.body.messages[0].delegator_address')
         AMOUNT=$(cat ${f} | jq -r '.body.messages[0].value.amount')
         DENOM=$(cat ${f} | jq -r '.body.messages[0].value.denom')
-        echo upload/mandelbotd add-genesis-account ${ADDRESS} ${AMOUNT}${DENOM} || :
+        ~/upload/mandelbotd add-genesis-account ${ADDRESS} ${AMOUNT}${DENOM} || :
     fi
 done
-upload/mandelbotd collect-gentxs
+~/upload/mandelbotd collect-gentxs

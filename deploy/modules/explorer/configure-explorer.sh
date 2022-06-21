@@ -26,7 +26,7 @@ for i in $(seq 0 $N_MINUS_1); do
 done
 
 rm -rf ~/.mandelbot
-upload/mandelbotd init $MONIKER --chain-id mandelbot-test-1
+~/upload/mandelbotd init $MONIKER --chain-id mandelbot-test-1
 cp /tmp/genesis.json ~/.mandelbot/config/
 
 cat >/tmp/mandelbot.service <<-EOF

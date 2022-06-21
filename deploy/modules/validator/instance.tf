@@ -151,12 +151,14 @@ resource "null_resource" "download_genesis_file" {
 }
 
 data "local_file" "genesis_file" {
+  count = var.num_instances <= 1 ? 0 : 1
+
   depends_on = [null_resource.configure_client, null_resource.copy_gentx_to_primary_validator, null_resource.generate_genesis_file, null_resource.download_genesis_file]
   filename   = "/tmp/mandelbot/validator/genesis/genesis.json"
 }
 
 locals {
-  genesis_file_content = data.local_file.genesis_file.content
+  genesis_file_content = var.num_instances <= 1 ? "" : data.local_file.genesis_file[0].content
 }
 
 resource "null_resource" "copy_genesis_file_to_secondary_validator" {
