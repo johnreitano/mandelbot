@@ -4,7 +4,7 @@ set -e
 
 # nohup ignite chain serve --verbose >mandelbot.out 2>&1 </dev/null &
 # nohup upload/mandelbotd start >mandelbot.out 2>&1 </dev/null &
-echo "About to start explorer node with id $(upload/mandelbotd tendermint show-node-id)"
+echo "About to start explorer node with id $(~/upload/mandelbotd tendermint show-node-id)"
 ~/upload/mandelbotd start </dev/null &
 sleep 10
 

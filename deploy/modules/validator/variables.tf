@@ -38,3 +38,9 @@ variable "num_instances" {
 variable "ami" {
   description = "the ami to use for instances"
 }
+
+variable "genesis_file_path" {
+  description = "path to most recently generated genesis file"
+  default     = "/tmp/mandelbot/validator/genesis/genesis.json"
+  type        = string
+}

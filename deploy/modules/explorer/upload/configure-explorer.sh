@@ -3,13 +3,6 @@
 set -x
 set -e
 
-# sleep until instance is ready
-until [[ -f /var/lib/cloud/instance/boot-finished ]]; do
-    sleep 1
-done
-
-MONIKER="explorer"
-
 THIS_IP=$1
 
 SEED_IPS_STR=$2
@@ -26,8 +19,9 @@ for i in $(seq 0 $N_MINUS_1); do
 done
 
 rm -rf ~/.mandelbot
+MONIKER="explorer"
 ~/upload/mandelbotd init $MONIKER --chain-id mandelbot-test-1
-cp /tmp/genesis.json ~/.mandelbot/config/
+cp ~/upload/genesis.json ~/.mandelbot/config/
 
 cat >/tmp/mandelbot.service <<-EOF
 [Unit]
@@ -37,7 +31,7 @@ After=syslog.target network-online.target
 
 [Service]
 Type=simple
-ExecStart=sudo -u ubuntu /home/ubuntu/upload/start-explorer.sh ${NODE_INDEX}
+ExecStart=sudo -u ubuntu /home/ubuntu/upload/start-explorer.sh
 Restart=on-failure
 RestartSec=10
 KillMode=process
@@ -72,15 +66,17 @@ GOPATH=$(go env GOPATH)
 export PATH=$GOPATH/bin:$PATH
 rm -rf ~/.bdjuno
 bdjuno init
+cp ~/upload/genesis.json ~/.bdjuno/
+
 dasel put string -f ~/.bdjuno/config.yaml -p yaml ".chain.bech32_prefix" "mandelbot"
 dasel put string -f ~/.bdjuno/config.yaml -p yaml ".database.name" "bdjuno"
 dasel put string -f ~/.bdjuno/config.yaml -p yaml ".database.user" "bdjuno"
 dasel put string -f ~/.bdjuno/config.yaml -p yaml ".database.password" "bdjunopassword"
-cp /tmp/genesis.json ~/.bdjuno/
 
 sudo docker rm -f postgresql 2>/dev/null
-sudo rm -rf /pgdata
-sudo docker run --name postgresql -e POSTGRES_USER=admin -e POSTGRES_PASSWORD=adminpassword -p 5432:5432 -v /pgdata:/var/lib/postgresql/data -d postgres
+sudo rm -rf ~/pgdata
+sudo mkdir ~/pgdata
+sudo docker run --name postgresql -e POSTGRES_USER=admin -e POSTGRES_PASSWORD=adminpassword -p 5432:5432 -v ~/pgdata:/var/lib/postgresql/data -d postgres
 until nc -z $(sudo docker inspect --format='{{.NetworkSettings.IPAddress}}' postgresql) 5432; do
     echo "waiting for postgres container..."
     sleep 0.5
@@ -98,8 +94,8 @@ done
 sudo curl -L https://github.com/hasura/graphql-engine/raw/stable/cli/get.sh | bash
 
 sudo docker rm -f hasura 2>/dev/null
-sudo docker run --name hasura -e HASURA_GRAPHQL_UNAUTHORIZED_ROLE="anonymous" -e ACTION_BASE_URL="http://localhost:3000" -e HASURA_GRAPHQL_METADATA_DATABASE_URL="postgres://bdjuno:bdjunopassword@host.docker.internal:5432/bdjuno" -e PG_DATABASE_URL="postgres://bdjuno:bdjunopassword@host.docker.internal:5432/bdjuno" -e HASURA_GRAPHQL_ENABLE_CONSOLE="true" -e HASURA_GRAPHQL_DEV_MODE="true" -e HASURA_GRAPHQL_ENABLED_LOG_TYPES="startup, http-log, webhook-log, websocket-log, query-log" -e HASURA_GRAPHQL_ADMIN_SECRET="myadminsecretkey" -p 8080:8080 --add-host host.docker.internal:host-gateway -d hasura/graphql-engine
+sudo docker run --name hasura -e HASURA_GRAPHQL_UNAUTHORIZED_ROLE="anonymous" -e ACTION_BASE_URL="http://localhost:3000" -e HASURA_GRAPHQL_METADATA_DATABASE_URL="postgres://bdjuno:bdjunopassword@host.docker.internal:5432/bdjuno" -e PG_DATABASE_URL="postgres://bdjuno:bdjunopassword@host.docker.internal:5432/bdjuno" -e HASURA_GRAPHQL_ENABLE_CONSOLE="true" -e HASURA_GRAPHQL_DEV_MODE="true" -e HASURA_GRAPHQL_ENABLED_LOG_TYPES="startup, http-log, webhook-log, websocket-log, query-log" -e HASURA_GRAPHQL_ADMIN_SECRET=myadminsecretkey -p 8080:8080 --add-host host.docker.internal:host-gateway -v ~/bdjuno/hasura:/hasura -d hasura/graphql-engine
 cd ~/bdjuno/hasura
-hasura metadata apply --endpoint http://localhost:8080 --admin-secret myadminsecretkey
+sudo hasura metadata apply --endpoint http://localhost:8080 --admin-secret "myadminsecretkey"
 sudo docker stop hasura
 sudo docker stop postgresql

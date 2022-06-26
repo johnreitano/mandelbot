@@ -43,6 +43,7 @@ variable "validator_ips" {
   description = "the ip addresses of the validator nodes"
 }
 
-variable "validator_genesis_file_contents" {
-  description = "the contents of the genesis file from the first validator node"
+variable "genesis_file_available" {
+  description = "true if the genesis file is available"
+  type        = bool
 }

@@ -14,16 +14,8 @@ variable "igw_id" {
   description = "The id of the internet gatewy used by the project"
 }
 
-variable "fe_subnet_cidr" {
-  description = "CIDR block for explorer fe subnet"
-}
-
-variable "be_0_subnet_cidr" {
-  description = "CIDR block for explorer be_0 subnet"
-}
-
-variable "be_1_subnet_cidr" {
-  description = "CIDR block for explorer be_1 subnet"
+variable "subnet_cidr" {
+  description = "CIDR block for explorer subnet"
 }
 
 variable "ssh_private_key_path" {
@@ -50,6 +42,12 @@ variable "create_explorer" {
 variable "seed_ips" {
   description = "the ip addresses of the seed nodes"
 }
-variable "validator_genesis_file_contents" {
-  description = "the contents of the genesis file from the first validator node"
+
+variable "validator_ips" {
+  description = "the ip addresses of the validator nodes"
+}
+
+variable "genesis_file_available" {
+  description = "true if the genesis file is available"
+  type        = bool
 }

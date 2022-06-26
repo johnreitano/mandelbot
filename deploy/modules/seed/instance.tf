@@ -29,35 +29,21 @@ resource "aws_eip" "seed" {
   }
 }
 
-resource "null_resource" "build_and_configure_client" {
-  depends_on = [aws_security_group.seed, aws_eip.seed, aws_instance.seed]
+resource "null_resource" "configure_client" {
+  depends_on = [aws_security_group.seed, aws_eip.seed]
   count      = var.num_instances
 
-  # provisioner "local-exec" {
-  #   command = <<-EOF
-  #     # copy source to remote node as soon as sshd is available
-  #     until scp -o StrictHostKeyChecking=no -o UserKnownHostsFile=/dev/null -i ~/.ssh/id_rsa ${var.compressed_source_path} ubuntu@${aws_eip.seed[count.index].public_ip}:/tmp/mandelbot.tar.gz
-  #     do
-  #       sleep 1
-  #       echo -n "."
-  #     done
-  #     echo
-  #   EOF
-  # }
+  // copy genesis file from primary validator to explorer node
+  provisioner "local-exec" {
+    command = <<-EOF
+      if [[ "${var.genesis_file_available}" != "true" ]]; then exit 1; fi
+      until scp -o StrictHostKeyChecking=no -o UserKnownHostsFile=/dev/null -i ~/.ssh/id_rsa ubuntu@${var.validator_ips[0]}:.mandelbot/config/genesis.json upload/genesis.json; do echo "waiting for connection"; sleep 1; done
+    EOF
+  }
 
   provisioner "remote-exec" {
     inline = [
-      "echo building client on seed node...",
-      "pkill mandelbotd",
-      "rm -rf ~/mandelbot",
-      "mkdir ~/mandelbot",
-      "cd ~/mandelbot",
-      "tar -xzf /tmp/mandelbot.tar.gz",
-      "deploy/modules/validator/build-client.sh", # TODO: move this to script dir
-      "echo configuring seed node...",
-      "pkill mandelbotd",
-      "cd ~/mandelbot",
-      "deploy/modules/seed/configure-seed.sh ${count.index} '${join(",", [for node in aws_eip.seed : node.public_ip])}' '${join(",", var.validator_ips)}'",
+      "rm -rf upload",
     ]
     connection {
       type        = "ssh"
@@ -68,8 +54,8 @@ resource "null_resource" "build_and_configure_client" {
   }
 
   provisioner "file" {
-    content     = var.validator_genesis_file_contents
-    destination = "/home/ubuntu/.mandelbot/config/genesis.json"
+    source      = "upload"
+    destination = "."
     connection {
       type        = "ssh"
       user        = "ubuntu"
@@ -77,15 +63,42 @@ resource "null_resource" "build_and_configure_client" {
       host        = aws_eip.seed[count.index].public_ip
     }
   }
+
+  provisioner "file" {
+    source      = "modules/seed/upload/"
+    destination = "upload"
+    connection {
+      type        = "ssh"
+      user        = "ubuntu"
+      private_key = file(var.ssh_private_key_path)
+      host        = aws_eip.seed[count.index].public_ip
+    }
+  }
+
+  provisioner "remote-exec" {
+    inline = [
+      "echo configuring seed node...",
+      "chmod +x upload/*.sh upload/mandelbotd",
+      "upload/configure-generic-client.sh",
+      "upload/configure-seed.sh ${count.index} '${join(",", [for node in aws_eip.seed : node.public_ip])}' '${join(",", var.validator_ips)}'"
+    ]
+    connection {
+      type        = "ssh"
+      user        = "ubuntu"
+      private_key = file(var.ssh_private_key_path)
+      host        = aws_eip.seed[count.index].public_ip
+    }
+  }
+
   triggers = {
-    recent_instance_creation = join(",", [for r in aws_instance.seed : r.id])
-    change_to_genesis_file   = var.validator_genesis_file_contents
-    x                        = "2"
+    genesis_file_available = var.genesis_file_available
+    instance_created       = join(",", [for r in aws_instance.seed : r.id])
+    uploaded_files_changed = join(",", [for f in setunion(fileset(".", "upload/**"), fileset(".", "modules/seed/upload/**")) : filesha256(f)])
   }
 }
 
 resource "null_resource" "start_seed" {
-  depends_on = [null_resource.build_and_configure_client]
+  depends_on = [null_resource.configure_client]
   count      = var.num_instances
 
   provisioner "remote-exec" {
@@ -104,6 +117,6 @@ resource "null_resource" "start_seed" {
   }
 
   triggers = {
-    recent_client_configuration = join(",", [for r in null_resource.build_and_configure_client : r.id])
+    client_configuration_changed = join(",", [for r in null_resource.configure_client : r.id])
   }
 }

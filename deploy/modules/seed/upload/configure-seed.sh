@@ -31,7 +31,8 @@ done
 
 rm -rf ~/.mandelbot
 ~/upload/mandelbotd init $MONIKER --chain-id mandelbot-test-1
-cp deploy/node_key_seed_${NODE_INDEX}.json ~/.mandelbot/config/node_key.json
+cp ~/upload/node_key_seed_${NODE_INDEX}.json ~/.mandelbot/config/node_key.json
+cp ~/upload/genesis.json ~/.mandelbot/config/
 
 cat >/tmp/mandelbot.service <<-EOF
 [Unit]
