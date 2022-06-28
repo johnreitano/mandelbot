@@ -3,12 +3,19 @@ set -x
 set -e
 
 # nohup ignite chain serve --verbose >mandelbot.out 2>&1 </dev/null &
-# nohup upload/mandelbotd start >mandelbot.out 2>&1 </dev/null &
 echo "About to start explorer node with id $(~/upload/mandelbotd tendermint show-node-id)"
-~/upload/mandelbotd start </dev/null &
-sleep 10
+pkill mandelbotd || :
+sleep 1
+~/upload/mandelbotd start &
+sleep 1
 
-sudo docker start postgresql
-sudo docker start hasura
+sudo docker restart postgresql
+sleep 1
+sudo docker restart hasura
+sleep 1
+
+pkill bdjuno || :
+sleep 1
 GOPATH=$(go env GOPATH)
 $GOPATH/bin/bdjuno start </dev/null &
+sleep 1

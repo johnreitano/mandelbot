@@ -3,7 +3,7 @@
 set -x
 set -e
 
-THIS_NODE_ID=$(upload/mandelbotd tendermint show-node-id)
+THIS_NODE_ID=$(~/upload/mandelbotd tendermint show-node-id)
 for f in ~/.mandelbot/config/gentx/gentx-*.json; do
     base=$(basename ${f})
     if [[ "${base}" != "gentx-${THIS_NODE_ID}.json" ]]; then

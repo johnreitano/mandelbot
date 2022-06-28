@@ -69,13 +69,13 @@ resource "null_resource" "configure_client" {
 
   provisioner "remote-exec" {
     inline = [
-      "chmod +x upload/*.sh upload/mandelbotd",
       "echo configuring validator node...",
+      "chmod +x ~/upload/*.sh ~/upload/mandelbotd",
       "sudo systemctl stop mandelbot.service || :",
-      "upload/configure-generic-client.sh",
-      "upload/configure-validator.sh ${count.index} '${join(",", [for node in aws_eip.validator : node.public_ip])}'",
+      "~/upload/configure-generic-client.sh",
+      "~/upload/configure-validator.sh ${count.index} '${join(",", [for node in aws_eip.validator : node.public_ip])}'",
       "echo generating genesis transaction...",
-      "upload/generate-gentx.sh ${count.index}",
+      "~/upload/generate-gentx.sh ${count.index}",
     ]
     connection {
       type        = "ssh"
@@ -86,7 +86,8 @@ resource "null_resource" "configure_client" {
   }
   triggers = {
     instance_created_or_deleted = join(",", [for r in aws_instance.validator : r.id])
-    uploaded_files_changed      = join(",", [for f in setunion(fileset(".", "upload/**"), fileset(".", "modules/validator/upload/**")) : filesha256(f)])
+    uploaded_files_changed      = join(",", [for f in setunion(fileset(".", "upload/node_key_*.json"), fileset(".", "upload/*.sh"), fileset(".", "modules/validator/upload/*.sh")) : filesha256(f)])
+
   }
 }
 
@@ -124,10 +125,10 @@ resource "null_resource" "generate_genesis_file" {
   // download genesis file and copy to secondary validators
   provisioner "local-exec" {
     command = <<-EOF
+      if [[ "${var.num_instances}" < "2" ]]; then exit 0; fi
       rm -rf /tmp/mandelbot/validator/genesis
       mkdir -p /tmp/mandelbot/validator/genesis
       until scp -o StrictHostKeyChecking=no -o UserKnownHostsFile=/dev/null -i ~/.ssh/id_rsa ubuntu@${aws_eip.validator[0].public_ip}:.mandelbot/config/genesis.json /tmp/mandelbot/validator/genesis/genesis.json; do echo "waiting for connection"; sleep 1; done
-      if [[ "${var.num_instances}" < "2" ]]; then exit 0; fi
       secondary_ips='${join(" ", slice([for node in aws_eip.validator : node.public_ip], 1, var.num_instances))}'
       for secondary_ip in $secondary_ips; do
         scp -o StrictHostKeyChecking=no -o UserKnownHostsFile=/dev/null -i ~/.ssh/id_rsa /tmp/mandelbot/validator/genesis/genesis.json ubuntu@$secondary_ip:.mandelbot/config/genesis.json      
@@ -147,9 +148,8 @@ resource "null_resource" "start_validator" {
   provisioner "remote-exec" {
     inline = [
       "echo starting validator node ${count.index} via systemctl...",
-      "sudo systemctl stop mandelbot.service",
-      "sudo systemctl start mandelbot.service",
-      "sleep 2",
+      "sudo systemctl restart mandelbot.service",
+      "sleep 1",
       "sudo systemctl status -l mandelbot.service --no-pager",
       "sudo systemctl enable mandelbot.service",
     ]
@@ -165,17 +165,3 @@ resource "null_resource" "start_validator" {
   }
 }
 
-resource "null_resource" "download_latest_genesis_file" {
-  count = var.num_instances > 0 ? 1 : 0
-
-  provisioner "local-exec" {
-    command = <<-EOF
-      rm -rf /tmp/mandelbot/validator/genesis
-      mkdir -p /tmp/mandelbot/validator/genesis
-      until scp -o StrictHostKeyChecking=no -o UserKnownHostsFile=/dev/null -i ~/.ssh/id_rsa ubuntu@${aws_eip.validator[0].public_ip}:.mandelbot/config/genesis.json ${var.genesis_file_path}; do echo "waiting for connection"; sleep 1; done
-    EOF
-  }
-  triggers = {
-    run_after_genesis_file_generation = "${join(",", [for r in null_resource.generate_genesis_file : r.id])}-${timestamp()}"
-  }
-}

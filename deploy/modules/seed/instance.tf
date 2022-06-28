@@ -36,8 +36,8 @@ resource "null_resource" "configure_client" {
   // copy genesis file from primary validator to explorer node
   provisioner "local-exec" {
     command = <<-EOF
-      if [[ "${var.genesis_file_available}" != "true" ]]; then exit 1; fi
-      until scp -o StrictHostKeyChecking=no -o UserKnownHostsFile=/dev/null -i ~/.ssh/id_rsa ubuntu@${var.validator_ips[0]}:.mandelbot/config/genesis.json upload/genesis.json; do echo "waiting for connection"; sleep 1; done
+      if [[ "${var.genesis_file_available}" != "true" ]]; then echo "error: no genesis file avalable"; exit 1; fi
+      until scp -o StrictHostKeyChecking=no -o UserKnownHostsFile=/dev/null -i ~/.ssh/id_rsa ubuntu@${var.validator_ips[0]}:.mandelbot/config/genesis.json ./upload/genesis.json; do echo "waiting for connection"; sleep 1; done
     EOF
   }
 
@@ -78,9 +78,9 @@ resource "null_resource" "configure_client" {
   provisioner "remote-exec" {
     inline = [
       "echo configuring seed node...",
-      "chmod +x upload/*.sh upload/mandelbotd",
-      "upload/configure-generic-client.sh",
-      "upload/configure-seed.sh ${count.index} '${join(",", [for node in aws_eip.seed : node.public_ip])}' '${join(",", var.validator_ips)}'"
+      "chmod +x upload/*.sh ./upload/mandelbotd",
+      "~/upload/configure-generic-client.sh",
+      "~/upload/configure-seed.sh ${count.index} '${join(",", [for node in aws_eip.seed : node.public_ip])}' '${join(",", var.validator_ips)}'"
     ]
     connection {
       type        = "ssh"
@@ -93,7 +93,7 @@ resource "null_resource" "configure_client" {
   triggers = {
     genesis_file_available = var.genesis_file_available
     instance_created       = join(",", [for r in aws_instance.seed : r.id])
-    uploaded_files_changed = join(",", [for f in setunion(fileset(".", "upload/**"), fileset(".", "modules/seed/upload/**")) : filesha256(f)])
+    uploaded_files_changed = join(",", [for f in setunion(fileset(".", "upload/node_key_*.json"), fileset(".", "upload/*.sh"), fileset(".", "modules/seed/upload/*.sh")) : filesha256(f)])
   }
 }
 

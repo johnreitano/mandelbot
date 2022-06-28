@@ -60,7 +60,7 @@ cd ~
 rm -rf bdjuno
 git clone https://github.com/forbole/bdjuno.git
 cd bdjuno
-git checkout chains/cosmos/testnet
+# git checkout chains/cosmos/testnet
 make install
 GOPATH=$(go env GOPATH)
 export PATH=$GOPATH/bin:$PATH
@@ -72,6 +72,7 @@ dasel put string -f ~/.bdjuno/config.yaml -p yaml ".chain.bech32_prefix" "mandel
 dasel put string -f ~/.bdjuno/config.yaml -p yaml ".database.name" "bdjuno"
 dasel put string -f ~/.bdjuno/config.yaml -p yaml ".database.user" "bdjuno"
 dasel put string -f ~/.bdjuno/config.yaml -p yaml ".database.password" "bdjunopassword"
+dasel put string -f ~/.bdjuno/config.yaml -p yaml '.chain.modules.[]' "actions"
 
 sudo docker rm -f postgresql 2>/dev/null
 sudo rm -rf ~/pgdata
@@ -94,8 +95,16 @@ done
 sudo curl -L https://github.com/hasura/graphql-engine/raw/stable/cli/get.sh | bash
 
 sudo docker rm -f hasura 2>/dev/null
-sudo docker run --name hasura -e HASURA_GRAPHQL_UNAUTHORIZED_ROLE="anonymous" -e ACTION_BASE_URL="http://localhost:3000" -e HASURA_GRAPHQL_METADATA_DATABASE_URL="postgres://bdjuno:bdjunopassword@host.docker.internal:5432/bdjuno" -e PG_DATABASE_URL="postgres://bdjuno:bdjunopassword@host.docker.internal:5432/bdjuno" -e HASURA_GRAPHQL_ENABLE_CONSOLE="true" -e HASURA_GRAPHQL_DEV_MODE="true" -e HASURA_GRAPHQL_ENABLED_LOG_TYPES="startup, http-log, webhook-log, websocket-log, query-log" -e HASURA_GRAPHQL_ADMIN_SECRET=myadminsecretkey -p 8080:8080 --add-host host.docker.internal:host-gateway -v ~/bdjuno/hasura:/hasura -d hasura/graphql-engine
+sudo docker run --name hasura -e HASURA_GRAPHQL_UNAUTHORIZED_ROLE="anonymous" -e ACTION_BASE_URL="http://localhost:3000" -e HASURA_GRAPHQL_DATABASE_URL="postgres://bdjuno:bdjunopassword@host.docker.internal:5432/bdjuno" -e HASURA_GRAPHQL_ENABLE_CONSOLE="true" -e HASURA_GRAPHQL_DEV_MODE="true" -e HASURA_GRAPHQL_ENABLED_LOG_TYPES="startup, http-log, webhook-log, websocket-log, query-log" -e HASURA_GRAPHQL_ADMIN_SECRET=myadminsecretkey -p 8080:8080 --add-host host.docker.internal:host-gateway -v ~/bdjuno/hasura:/hasura -d hasura/graphql-engine
+sleep 1 # wait for hasura to be fully available
 cd ~/bdjuno/hasura
-sudo hasura metadata apply --endpoint http://localhost:8080 --admin-secret "myadminsecretkey"
+# sudo hasura metadata clear --admin-secret myadminsecretkey
+sudo hasura metadata apply --endpoint http://localhost:8080 --admin-secret myadminsecretkey
+hasura metadata ic list --admin-secret myadminsecretkey
+
+git clone https://github.com/johnreitano/mandelbot.git
+
 sudo docker stop hasura
 sudo docker stop postgresql
+
+# -e HASURA_GRAPHQL_METADATA_DATABASE_URL="postgres://bdjuno:bdjunopassword@host.docker.internal:5432/bdjuno" -e PG_DATABASE_URL="postgres://bdjuno:bdjunopassword@host.docker.internal:5432/bdjuno"
