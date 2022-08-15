@@ -22,10 +22,6 @@ variable "ssh_private_key_path" {
   description = "path to private SSH key file"
 }
 
-variable "ssh_public_key_path" {
-  description = "path to public SSH key file"
-}
-
 variable "tls_certificate_email" {
   description = "email to send to letsencrypt for tls certificates"
 }

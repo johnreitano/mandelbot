@@ -2,6 +2,17 @@ resource "aws_route53_zone" "default" {
   name = var.dns_zone_name
 }
 
+resource "null_resource" "store_dns_zone_name" {
+  provisioner "local-exec" {
+    command = "echo ${var.dns_zone_name} > dns_zone_name.txt"
+  }
+
+  triggers = {
+    zone_changed = aws_route53_zone.default.id
+  }
+}
+
+
 resource "null_resource" "build_linux_executable" {
   count = var.num_validator_instances > 0 || var.num_seed_instances > 0 ? 1 : 0
 
@@ -21,7 +32,6 @@ module "validator" {
   env                   = var.env
   project               = var.project
   ssh_private_key_path  = var.ssh_private_key_path
-  ssh_public_key_path   = var.ssh_public_key_path
   tls_certificate_email = var.tls_certificate_email
   vpc_id                = aws_vpc.vpc.id
   igw_id                = aws_internet_gateway.igw.id
@@ -39,7 +49,6 @@ module "seed" {
   env                    = var.env
   project                = var.project
   ssh_private_key_path   = var.ssh_private_key_path
-  ssh_public_key_path    = var.ssh_public_key_path
   tls_certificate_email  = var.tls_certificate_email
   vpc_id                 = aws_vpc.vpc.id
   igw_id                 = aws_internet_gateway.igw.id
@@ -58,7 +67,6 @@ module "explorer" {
   env                   = var.env
   project               = var.project
   ssh_private_key_path  = var.ssh_private_key_path
-  ssh_public_key_path   = var.ssh_public_key_path
   tls_certificate_email = var.tls_certificate_email
   vpc_id                = aws_vpc.vpc.id
   igw_id                = aws_internet_gateway.igw.id

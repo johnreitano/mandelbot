@@ -22,8 +22,8 @@ NEW_CHAIN_TITLE='New''chain'
 git checkout ${NEW_CHAIN_LOWER}-deployment
 git pull
 git grep -l $NEW_CHAIN_LOWER | xargs sed -i -e 's/'$NEW_CHAIN_LOWER'/mandelbot/g'
-git grep -l $NEW_CHAIN_UPPER | xargs sed -i -e 's/'$NEW_CHAIN_UPPER'/NEWCHAIN/g'
-git grep -l $NEW_CHAIN_TITLE | xargs sed -i -e 's/'$NEW_CHAIN_TITLE'/Newchain/g'
+git grep -l $NEW_CHAIN_UPPER | xargs sed -i -e 's/'$NEW_CHAIN_UPPER'/MANDELBOT/g'
+git grep -l $NEW_CHAIN_TITLE | xargs sed -i -e 's/'$NEW_CHAIN_TITLE'/Mandelbot/g'
 git mv public/logos/${NEW_CHAIN_LOWER}.png public/logos/mandelbot.png
 git mv public/logos/${NEW_CHAIN_LOWER}stake.png public/logos/mandelbotstake.png
 git mv src/chains/mainnet/${NEW_CHAIN_LOWER}.json src/chains/mainnet/mandelbot.json
